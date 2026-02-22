@@ -1,12 +1,16 @@
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_openai import AzureChatOpenAI
 import fitz
+import os
 
 
 class UroborosEngine:
     def __init__(self):
         self.llm = AzureChatOpenAI(
-            azure_deployment="gpt-4o", api_version="2024-05-01-preview"
+            azure_deployment="gpt-4o",
+            api_version="2024-05-01-preview",
+            azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT") or "",
+            api_key=os.getenv("AZURE_OPENAI_API_KEY") or "",
         )
 
     def extract_text_from_pdf(self, pdf_content: bytes) -> str:
