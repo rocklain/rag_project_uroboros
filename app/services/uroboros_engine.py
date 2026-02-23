@@ -8,7 +8,7 @@ class UroborosEngine:
     def __init__(self):
         self.llm = AzureChatOpenAI(
             azure_deployment="gpt-4o",
-            api_version="2024-05-01-preview",
+            api_version="2024-12-01-preview",
             azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT") or "",
             api_key=os.getenv("AZURE_OPENAI_API_KEY") or "",
         )
@@ -34,6 +34,7 @@ class UroborosEngine:
         1. コードブロック内にMermaidのコードのみを出力してください。
         2. 構成図には、Frontend, Backend, Database, AI Engine, External APIs等の要素を含めてください。
         3. 日本語で注釈を入れてください。
+        4. Mermaidのノードラベルに日本語やHTMLタグを含める場合は、必ず A["ラベル名"] のようにダブルクォーテーションで囲んでください。
         """)
 
         chain = prompt | self.llm
