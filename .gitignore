@@ -12,3 +12,4 @@ venv/
 
 # VS Codeの設定
 .vscode/
+functions/local.settings.json
