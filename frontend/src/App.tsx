@@ -1,30 +1,28 @@
 import React, { useState } from "react";
 import axios from "axios";
 import Mermaid from "./components/Mermaid";
-// 修正後：Terminal と Share2 を追加
-import { Upload, Loader2, Cpu, FileText, Terminal, Share2 } from "lucide-react";
+import { Search, Loader2, Cpu, Terminal, Sparkles } from "lucide-react";
 
 function App() {
-  const [file, setFile] = useState(null);
+  const [query, setQuery] = useState(""); // 検索クエリ用の状態
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  const handleFileChange = (e) => setFile(e.target.files[0]);
-
-  const handleAnalyze = async () => {
-    if (!file) return;
+  // RAGエンドポイントを叩く関数
+  const handleIndexSearch = async () => {
+    if (!query) return;
     setLoading(true);
-    const formData = new FormData();
-    formData.append("file", file);
 
     try {
-      const response = await axios.post(
-        "http://127.0.0.1:8000/analyze",
-        formData,
-      );
+      // JSON形式でクエリを送信
+      const response = await axios.post("http://127.0.0.1:8000/generate-from-index", {
+        query: query,
+        genre: "RAG" // 必要に応じてフィルターを指定
+      });
       setResult(response.data);
     } catch (error) {
-      alert("解析に失敗しました");
+      console.error(error);
+      alert("AI Searchからの抽出に失敗しました");
     } finally {
       setLoading(false);
     }
@@ -41,47 +39,43 @@ function App() {
           <span className="text-2xl font-black tracking-tighter text-white">OUROBOROS <span className="text-neon-cyan">v1.0</span></span>
         </div>
         <div className="hidden md:flex items-center gap-6 text-xs tracking-widest text-cyan-500/50 uppercase">
-          <span className="flex items-center gap-1"><Terminal size={14} /> System: Ready</span>
-          <span className="flex items-center gap-1"><Share2 size={14} /> Network: AOAI Connected</span>
+          <span className="flex items-center gap-1 font-bold text-neon-cyan"><Sparkles size={14} /> Mode: RAG Enabled</span>
+          <span className="flex items-center gap-1"><Terminal size={14} /> System: Online</span>
         </div>
       </nav>
 
-      {/* メインコンテンツ */}
       <main className="flex-1 p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 max-w-[1600px] mx-auto w-full">
         
         {/* 左：コントロールパネル */}
         <div className="lg:col-span-4 space-y-6">
           <section className="bg-cyber-dark border border-cyan-900/30 rounded-2xl p-6 shadow-neon relative">
-            <div className="absolute top-0 right-0 p-2 opacity-10"><Cpu size={40} /></div>
             <h2 className="text-xs uppercase tracking-[0.2em] text-neon-cyan mb-6 font-bold flex items-center gap-2">
-              <div className="w-1.5 h-1.5 bg-neon-cyan rounded-full animate-pulse" />
-              Ingestion Module
+              <Search size={16} /> Research Query
             </h2>
             
-            <label className="group relative flex flex-col items-center justify-center w-full h-48 border-2 border-dashed border-slate-800 rounded-xl cursor-pointer hover:border-neon-cyan/50 transition-all bg-cyber-black/50">
-              <div className="flex flex-col items-center justify-center py-6">
-                <FileText className={`w-12 h-12 mb-4 transition-colors ${file ? "text-neon-cyan" : "text-slate-600"}`} />
-                <p className="text-xs text-slate-400 text-center px-4">
-                  {file ? <span className="text-white font-bold">{file.name}</span> : "DROP RESEARCH PAPER (PDF)"}
-                </p>
-              </div>
-              <input type="file" className="hidden" onChange={handleFileChange} accept="application/pdf" />
-            </label>
+            <div className="space-y-4">
+              <textarea
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="例: Graph RAG論文の全体的なアーキテクチャを図解して"
+                className="w-full h-32 bg-cyber-black border border-slate-800 rounded-xl p-4 text-sm focus:border-neon-cyan/50 focus:outline-none transition-all resize-none text-white"
+              />
 
-            <button
-              onClick={handleAnalyze}
-              disabled={loading || !file}
-              className="mt-6 w-full py-4 bg-neon-cyan text-cyber-black font-black uppercase tracking-widest rounded-xl hover:bg-white transition-all disabled:bg-slate-800 disabled:text-slate-600 shadow-[0_0_20px_rgba(0,255,249,0.3)]"
-            >
-              {loading ? <Loader2 className="animate-spin mx-auto" size={24} /> : "Initialize Analysis"}
-            </button>
+              <button
+                onClick={handleIndexSearch}
+                disabled={loading || !query}
+                className="w-full py-4 bg-neon-cyan text-cyber-black font-black uppercase tracking-widest rounded-xl hover:bg-white transition-all disabled:bg-slate-800 disabled:text-slate-600 shadow-neon"
+              >
+                {loading ? <Loader2 className="animate-spin mx-auto" size={24} /> : "Ask Uroboros"}
+              </button>
+            </div>
           </section>
 
-          {/* ステータスログ風の装飾 */}
+          {/* ログエリア */}
           <section className="bg-cyber-dark border border-slate-800 rounded-2xl p-4 text-[10px] font-mono text-cyan-500/40 space-y-1">
-            <p>&gt; initializing neural weights...</p>
-            <p>&gt; connection to gpt-4o established</p>
-            <p>&gt; ready for stream input</p>
+            <p>&gt; Index 'ouroboros_index' connected</p>
+            <p>&gt; 90 chunks available for retrieval</p>
+            <p>&gt; Vector space ready </p>
           </section>
         </div>
 
@@ -89,7 +83,6 @@ function App() {
         <div className="lg:col-span-8 bg-cyber-dark border border-cyan-900/20 rounded-2xl p-8 flex flex-col min-h-[600px] overflow-hidden relative">
           <div className="flex items-center justify-between mb-8 border-b border-slate-800 pb-4">
             <h2 className="text-xs uppercase tracking-[0.2em] text-neon-cyan font-bold">Blueprint Visualizer</h2>
-            {result && <span className="text-[10px] text-slate-500 uppercase">Analysis Engine: GPT-4o-2024-11-20</span>}
           </div>
 
           <div className="flex-1 relative overflow-auto">
@@ -103,7 +96,7 @@ function App() {
             ) : (
               <div className="absolute inset-0 flex flex-col items-center justify-center opacity-20">
                 <Cpu size={80} className="mb-4 animate-pulse" />
-                <p className="tracking-[0.5em] uppercase text-xs">Awaiting data...</p>
+                <p className="tracking-[0.5em] uppercase text-xs">Ready for RAG Search</p>
               </div>
             )}
           </div>
