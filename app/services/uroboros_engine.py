@@ -7,42 +7,49 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_openai import AzureChatOpenAI
 from pydantic import SecretStr
 from dotenv import load_dotenv
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 load_dotenv()
 
 
+class Settings(BaseSettings):
+    azure_openai_endpoint: str
+    azure_openai_api_key: str
+    azure_search_endpoint: str
+    azure_search_key: str
+    azure_search_index_name: str
+    azure_openai_embedding_deployment: str
+    azure_openai_chat_deployment: str
+
+    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+
+
+settings = Settings()
+
+
 class UroborosEngine:
     def __init__(self):
-        # --- 共通の環境変数を取得 ---
-        aoai_endpoint = os.getenv("AZURE_OPENAI_ENDPOINT", "")
-        aoai_key = os.getenv("AZURE_OPENAI_API_KEY", "")
-        search_endpoint = os.getenv("AZURE_SEARCH_ENDPOINT", "")
-        search_key = os.getenv("AZURE_SEARCH_KEY", "")
-        index_name = os.getenv("AZURE_SEARCH_INDEX_NAME", "")
-
-        print(f"DEBUG: AOAI ENDPOINT -> {aoai_endpoint}")
-        print(f"DEBUG: SEARCH ENDPOINT -> {search_endpoint}")
-
-        # 1. LLMの設定 (LangChain)
+        print(f"DEBUG: AOAI ENDPOINT -> {settings.azure_openai_endpoint}")
+        print(f"DEBUG: SEARCH ENDPOINT -> {settings.azure_search_endpoint}")
         self.llm = AzureChatOpenAI(
-            azure_deployment=os.getenv("AZURE_OPENAI_CHAT_DEPLOYMENT", ""),
+            azure_deployment=settings.azure_openai_chat_deployment,
             api_version="2024-12-01-preview",
-            azure_endpoint=aoai_endpoint,
-            api_key=SecretStr(aoai_key),
+            azure_endpoint=settings.azure_openai_endpoint,
+            api_key=SecretStr(settings.azure_openai_api_key),
         )
 
         # 2. Embedding用の設定 (Azure SDK)
         self.embed_client = AzureOpenAI(
-            azure_endpoint=aoai_endpoint,
-            api_key=aoai_key,
+            azure_endpoint=settings.azure_openai_endpoint,
+            api_key=settings.azure_openai_api_key,
             api_version="2024-02-01",
         )
 
         # 3. AI Search クライアントの設定
         self.search_client = SearchClient(
-            endpoint=search_endpoint,
-            index_name=index_name,
-            credential=AzureKeyCredential(search_key),
+            endpoint=settings.azure_search_endpoint,
+            index_name=settings.azure_search_index_name,
+            credential=AzureKeyCredential(settings.azure_search_key),
         )
 
     async def _retrieve_context(self, query: str, top_k: int = 5):
@@ -50,7 +57,7 @@ class UroborosEngine:
         try:
             print("Step 1: Embedding start")
             embed_res = self.embed_client.embeddings.create(
-                input=[query], model=os.getenv("AZURE_OPENAI_EMBEDDING_DEPLOYMENT", "")
+                input=[query], model=settings.azure_openai_embedding_deployment
             )
             query_vector = embed_res.data[0].embedding
 
@@ -71,7 +78,8 @@ class UroborosEngine:
             print(f"Step 3: Search finished. Found {len(result_list)} chunks.")
 
             return "\n\n".join(
-                [f"Source: {r['source_path']}\n{r['content']}" for r in result_list]
+                f"Source: {r.get('source_path', 'N/A')}\n{r.get('content', '')}"
+                for r in result_list
             )
         except Exception as e:
             print(f"CRITICAL ERROR IN _retrieve_context: {e}")
