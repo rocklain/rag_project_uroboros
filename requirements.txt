@@ -5,3 +5,9 @@ openai
 pymupdf
 langchain-text-splitters
 pydantic-settings
+fastapi
+uvicorn
+langchain-core
+langchain-openai
+aiohttp
+python-dotenv

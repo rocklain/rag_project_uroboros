@@ -24,7 +24,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
 
-settings = Settings()
+settings = Settings()  # type: ignore
 
 
 class UroborosEngine:
@@ -66,15 +66,15 @@ class UroborosEngine:
                 vector=query_vector, k_nearest_neighbors=top_k, fields="content_vector"
             )
 
-            # search() 自体は非同期ではないので await しない
-            results = self.search_client.search(
+            # aio版（非同期）クライアントなので、リクエストを await で待機
+            results = await self.search_client.search(
                 search_text=None,
                 vector_queries=[vector_query],
                 select=["content", "source_path"],
             )
 
-            # ここでリスト化する瞬間に Azure への通信が発生する
-            result_list = list(results)
+            # 結果は非同期イテレータとして返るため、async for でリスト化
+            result_list = [r async for r in results]
             print(f"Step 3: Search finished. Found {len(result_list)} chunks.")
 
             return "\n\n".join(
