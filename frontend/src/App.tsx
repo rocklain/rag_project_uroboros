@@ -1,7 +1,14 @@
 import { useState } from "react";
 import axios from "axios";
 import Mermaid from "./components/Mermaid";
-import { Search, Loader2, Cpu, Terminal, Sparkles, AlertTriangle } from "lucide-react";
+import {
+  Search,
+  Loader2,
+  Cpu,
+  Terminal,
+  Sparkles,
+  AlertTriangle,
+} from "lucide-react";
 
 // 型定義の整理
 interface SearchResult {
@@ -20,7 +27,7 @@ function App() {
   const [error, setError] = useState<string | null>(null);
   const handleIndexSearch = async () => {
     if (!query || !API_URL) return;
-    
+
     setLoading(true);
     setError(null);
     try {
@@ -32,15 +39,25 @@ function App() {
           headers: {
             "Content-Type": "application/json",
             "X-Ouroboros-Key": APP_PASSWORD,
-        }
+          },
+        },
       );
       setResult(response.data);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Search Error:", err);
-      // HTTPステータスコードに応じたメッセージ切り分け
-      const message = err.response?.status === 401
-        ? "認証エラー: システムキーが正しくありません。"
-        : "サーバーとの通信に失敗しました。住所（URL）を確認してください。";
+      let message = "サーバーとの通信に失敗しました。";
+      // axios のエラーかどうかを判定
+      if (axios.isAxiosError(err)) {
+        if (err.response?.status === 401) {
+          message = "認証エラー: システムキーが正しくありません。";
+        } else if (err.response?.status === 404) {
+          message = "エンドポイントが見つかりません。URLを確認してください。";
+        }
+      } else if (err instanceof Error) {
+        // Axios以外の一般的なエラー
+        message = err.message;
+      }
+
       setError(message);
     } finally {
       setLoading(false);
@@ -55,11 +72,17 @@ function App() {
           <div className="w-10 h-10 bg-gradient-to-br from-neon-cyan to-blue-600 rounded-lg flex items-center justify-center shadow-neon">
             <Cpu className="text-cyber-black" size={24} />
           </div>
-          <span className="text-2xl font-black tracking-tighter text-white">OUROBOROS <span className="text-neon-cyan">v1.0</span></span>
+          <span className="text-2xl font-black tracking-tighter text-white">
+            OUROBOROS <span className="text-neon-cyan">v1.0</span>
+          </span>
         </div>
         <div className="hidden md:flex items-center gap-6 text-xs tracking-widest text-cyan-500/50 uppercase">
-          <span className="flex items-center gap-1 font-bold text-neon-cyan"><Sparkles size={14} /> Mode: RAG Enabled</span>
-          <span className="flex items-center gap-1"><Terminal size={14} /> System: Online</span>
+          <span className="flex items-center gap-1 font-bold text-neon-cyan">
+            <Sparkles size={14} /> Mode: RAG Enabled
+          </span>
+          <span className="flex items-center gap-1">
+            <Terminal size={14} /> System: Online
+          </span>
         </div>
       </nav>
 
@@ -70,7 +93,7 @@ function App() {
             <h2 className="text-xs uppercase tracking-[0.2em] text-neon-cyan mb-6 font-bold flex items-center gap-2">
               <Search size={16} /> Research Query
             </h2>
-            
+
             <div className="space-y-4">
               <textarea
                 value={query}
@@ -84,7 +107,11 @@ function App() {
                 disabled={loading || !query}
                 className="w-full py-4 bg-neon-cyan text-cyber-black font-black uppercase tracking-widest rounded-xl hover:bg-white transition-all disabled:bg-slate-800 disabled:text-slate-600 shadow-neon"
               >
-                {loading ? <Loader2 className="animate-spin mx-auto" size={24} /> : "Ask Uroboros"}
+                {loading ? (
+                  <Loader2 className="animate-spin mx-auto" size={24} />
+                ) : (
+                  "Ask Uroboros"
+                )}
               </button>
 
               {/* エラーメッセージ表示エリア */}
@@ -108,10 +135,12 @@ function App() {
         {/* 右：出力エリア */}
         <div className="lg:col-span-8 bg-cyber-dark border border-cyan-900/20 rounded-2xl p-8 flex flex-col min-h-[600px] overflow-hidden relative">
           <div className="flex items-center justify-between mb-8 border-b border-slate-800 pb-4">
-            <h2 className="text-xs uppercase tracking-[0.2em] text-neon-cyan font-bold">Blueprint Visualizer</h2>
+            <h2 className="text-xs uppercase tracking-[0.2em] text-neon-cyan font-bold">
+              Blueprint Visualizer
+            </h2>
             {result && (
-              <button 
-                onClick={() => setResult(null)} 
+              <button
+                onClick={() => setResult(null)}
                 className="text-[10px] text-slate-500 hover:text-neon-cyan transition-colors"
               >
                 CLEAR OUTPUT
@@ -130,7 +159,9 @@ function App() {
             ) : (
               <div className="absolute inset-0 flex flex-col items-center justify-center opacity-20">
                 <Cpu size={80} className="mb-4 animate-pulse" />
-                <p className="tracking-[0.5em] uppercase text-xs">Ready for RAG Search</p>
+                <p className="tracking-[0.5em] uppercase text-xs">
+                  Ready for RAG Search
+                </p>
               </div>
             )}
           </div>
