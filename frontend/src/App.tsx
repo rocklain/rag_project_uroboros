@@ -9,6 +9,7 @@ import {
   Sparkles,
   AlertTriangle,
 } from "lucide-react";
+import { Lock } from "lucide-react";
 
 // 型定義の整理
 interface SearchResult {
@@ -18,27 +19,39 @@ interface SearchResult {
 
 // 環境変数の取得（存在しない場合のガード）
 const API_URL = import.meta.env.VITE_API_URL || "";
-const APP_PASSWORD = import.meta.env.VITE_APP_PASSWORD || "";
 
 function App() {
   const [query, setQuery] = useState("");
   const [result, setResult] = useState<SearchResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const [inputPassword, setInputPassword] = useState("");
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  // ログイン処理
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (inputPassword.length > 0) {
+      setIsAuthenticated(true);
+      setError(null);
+    } else {
+      setError("システムキーを入力してください。");
+    }
+  };
+
   const handleIndexSearch = async () => {
     if (!query || !API_URL) return;
-
     setLoading(true);
     setError(null);
     try {
-      // APIエンドポイントのURLが正しいか（/の重複など）を確認しながら送信
       const response = await axios.post(
         `${API_URL.replace(/\/$/, "")}/generate-from-index`,
         { query, genre: "RAG" },
         {
           headers: {
             "Content-Type": "application/json",
-            "X-Ouroboros-Key": APP_PASSWORD,
+            "X-Ouroboros-Key": inputPassword,
           },
         },
       );
@@ -46,23 +59,53 @@ function App() {
     } catch (err: unknown) {
       console.error("Search Error:", err);
       let message = "サーバーとの通信に失敗しました。";
-      // axios のエラーかどうかを判定
+
       if (axios.isAxiosError(err)) {
         if (err.response?.status === 401) {
           message = "認証エラー: システムキーが正しくありません。";
+          setIsAuthenticated(false);
         } else if (err.response?.status === 404) {
-          message = "エンドポイントが見つかりません。URLを確認してください。";
+          message = "エンドポイントが見つかりません。";
         }
-      } else if (err instanceof Error) {
-        // Axios以外の一般的なエラー
-        message = err.message;
       }
-
       setError(message);
     } finally {
       setLoading(false);
     }
   };
+
+  // 未認証ならログイン画面を表示
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-cyber-black flex items-center justify-center p-6 font-mono">
+        <div className="w-full max-w-md bg-cyber-dark border border-cyan-900/30 rounded-2xl p-8 shadow-neon">
+          <div className="flex flex-col items-center mb-8">
+            <div className="w-16 h-16 bg-gradient-to-br from-neon-cyan to-blue-600 rounded-2xl flex items-center justify-center shadow-neon mb-4">
+              <Lock className="text-cyber-black" size={32} />
+            </div>
+            <h1 className="text-white text-2xl font-black tracking-tighter">
+              OUROBOROS AUTH
+            </h1>
+          </div>
+          <form onSubmit={handleLogin} className="space-y-4">
+            <input
+              type="password"
+              value={inputPassword}
+              onChange={(e) => setInputPassword(e.target.value)}
+              placeholder="ENTER SYSTEM KEY..."
+              className="w-full bg-cyber-black border border-slate-800 rounded-xl p-4 text-center text-neon-cyan focus:border-neon-cyan/50 focus:outline-none transition-all"
+            />
+            <button className="w-full py-4 bg-neon-cyan text-cyber-black font-black uppercase tracking-widest rounded-xl hover:bg-white transition-all shadow-neon">
+              UNLOCK SYSTEM
+            </button>
+            {error && (
+              <p className="text-red-400 text-xs text-center mt-2">{error}</p>
+            )}
+          </form>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-cyber-black text-slate-300 font-mono flex flex-col">
