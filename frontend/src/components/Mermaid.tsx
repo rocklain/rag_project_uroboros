@@ -17,8 +17,12 @@ mermaid.initialize({
   securityLevel: "loose",
 });
 
-const Mermaid = ({ chart }) => {
-  const ref = useRef(null);
+interface MermaidProps {
+  chart: string;
+}
+
+const Mermaid: React.FC<MermaidProps> = ({ chart }) => {
+  const ref = useRef<HTMLDivElement>(null);
   const [renderError, setRenderError] = useState(false);
 
   useEffect(() => {

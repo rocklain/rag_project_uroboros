@@ -1,11 +1,16 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import axios from "axios";
 import Mermaid from "./components/Mermaid";
 import { Search, Loader2, Cpu, Terminal, Sparkles } from "lucide-react";
 
+interface SearchResult {
+  summary: string;
+  mermaid: string;
+}
+
 function App() {
   const [query, setQuery] = useState(""); // 検索クエリ用の状態
-  const [result, setResult] = useState(null);
+  const [result, setResult] = useState<SearchResult | null>(null);
   const [loading, setLoading] = useState(false);
 
   // RAGエンドポイントを叩く関数
