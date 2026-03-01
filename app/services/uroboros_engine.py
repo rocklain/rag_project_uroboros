@@ -1,6 +1,6 @@
 import os
 from azure.core.credentials import AzureKeyCredential
-from azure.search.documents import SearchClient
+from azure.search.documents.aio import SearchClient
 from azure.search.documents.models import VectorizedQuery
 from openai import AzureOpenAI
 from langchain_core.prompts import ChatPromptTemplate
