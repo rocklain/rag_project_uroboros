@@ -31,7 +31,6 @@ const Mermaid: React.FC<MermaidProps> = ({ chart }) => {
 
       try {
         setRenderError(false);
-        // 一度中身を完全に消去
         ref.current.innerHTML = "";
 
         // コードのクリーニング
@@ -41,9 +40,9 @@ const Mermaid: React.FC<MermaidProps> = ({ chart }) => {
           .trim();
 
         const id = `mermaid-render-${Math.random().toString(36).substring(2, 9)}`;
+        // mermaid.render は構文が不正だと例外を投げるため、ここでキャッチされる
         const { svg } = await mermaid.render(id, cleanCode);
 
-        // 要素が存在することを確認してから挿入
         if (ref.current) {
           ref.current.innerHTML = svg;
         }
@@ -59,11 +58,14 @@ const Mermaid: React.FC<MermaidProps> = ({ chart }) => {
   return (
     <div className="relative w-full">
       {renderError && (
-        <div className="bg-red-950/30 border border-red-500/50 p-4 rounded-lg text-red-200 mb-4">
-          <div className="flex items-center gap-2 mb-2 font-bold text-red-400 font-mono">
+        <div className="bg-red-950/30 border border-red-500/50 p-4 rounded-lg text-red-200 mb-4 font-mono">
+          <div className="flex items-center gap-2 mb-2 font-bold text-red-400">
             <AlertCircle size={20} /> SYNTAX ERROR DETECTED
           </div>
-          <pre className="bg-black/50 p-2 text-[10px] overflow-auto">
+          <p className="text-[10px] mb-2 text-red-300/70">
+            AIが生成した構文に誤りがあります。生データを確認してください：
+          </p>
+          <pre className="bg-black/50 p-2 text-[10px] overflow-auto max-h-40 border border-red-900/30">
             {chart}
           </pre>
         </div>

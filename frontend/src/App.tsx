@@ -15,6 +15,7 @@ import { Lock } from "lucide-react";
 interface SearchResult {
   summary: string;
   mermaid: string;
+  annotation: string;
 }
 
 // 環境変数の取得（存在しない場合のガード）
@@ -55,7 +56,14 @@ function App() {
           },
         },
       );
-      setResult(response.data);
+      const fullText = response.data.mermaid;
+      const [rawCode, rawNote] = fullText.split(/注釈[:：]|\*\*注釈[:：]\*\*/);
+
+      setResult({
+        ...response.data,
+        mermaid: rawCode.trim(),
+        annotation: rawNote ? `注釈: ${rawNote.trim()}` : "",
+      });
     } catch (err: unknown) {
       console.error("Search Error:", err);
       let message = "サーバーとの通信に失敗しました。";
@@ -197,7 +205,17 @@ function App() {
                 <div className="bg-cyber-black p-4 rounded-lg border-l-4 border-neon-cyan text-sm italic text-slate-400">
                   {result.summary}
                 </div>
+
+                {/* Mermaid図のレンダリング */}
                 <Mermaid chart={result.mermaid} />
+
+                {/* --- 出典注釈を表示 --- */}
+                {result.annotation && (
+                  <div className="mt-8 pt-4 border-t border-slate-800 text-[10px] text-slate-500 flex items-center gap-2 italic">
+                    <Terminal size={12} className="text-cyan-900" />
+                    {result.annotation}
+                  </div>
+                )}
               </div>
             ) : (
               <div className="absolute inset-0 flex flex-col items-center justify-center opacity-20">
