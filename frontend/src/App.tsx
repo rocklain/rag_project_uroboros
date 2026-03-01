@@ -171,7 +171,7 @@ function App() {
             <p>&gt; Index 'ouroboros_index' connected</p>
             <p>&gt; 90 chunks available for retrieval</p>
             <p>&gt; Vector space ready </p>
-            <p>&gt; Auth Token: {APP_PASSWORD ? "SET" : "MISSING"}</p>
+            <p>&gt; Auth Token: {inputPassword ? "READY" : "WAITING"}</p>
           </section>
         </div>
 
