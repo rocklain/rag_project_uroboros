@@ -24,7 +24,8 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
     allow_methods=["*"],
-    allow_headers=["*"],
+    allow_headers=["Content-Type", "X-Ouroboros-Key", "Authorization"],
+    max_age=600, 
 )
 
 engine = UroborosEngine()
