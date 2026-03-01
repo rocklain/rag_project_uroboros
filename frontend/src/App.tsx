@@ -56,12 +56,17 @@ function App() {
           },
         },
       );
+      // handleIndexSearch 内
       const fullText = response.data.mermaid;
-      const [rawCode, rawNote] = fullText.split(/注釈[:：]|\*\*注釈[:：]\*\*/);
+
+      // 「注釈」というキーワードで二つに割る
+      const [rawChartArea, rawNote] = fullText.split(
+        /注釈[:：]|\*\*注釈[:：]\*\*/,
+      );
 
       setResult({
         ...response.data,
-        mermaid: rawCode.trim(),
+        mermaid: rawChartArea || "",
         annotation: rawNote ? `注釈: ${rawNote.trim()}` : "",
       });
     } catch (err: unknown) {

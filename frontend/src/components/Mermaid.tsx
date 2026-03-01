@@ -33,14 +33,30 @@ const Mermaid: React.FC<MermaidProps> = ({ chart }) => {
         setRenderError(false);
         ref.current.innerHTML = "";
 
-        // コードのクリーニング
-        const cleanCode = chart
+        // コードブロック (```mermaid ... ```) を探し、中身だけを抜き出す
+        const mermaidMatch = chart.match(/```mermaid([\s\S]*?)```/);
+        let cleanCode = mermaidMatch ? mermaidMatch[1] : chart;
+
+        // 不要なマークダウンタグを徹底除去
+        cleanCode = cleanCode
           .replace(/```mermaid/g, "")
           .replace(/```/g, "")
           .trim();
 
+        // AIがやりがちな構文ミスを補正 (例: class A,B,className のカンマをスペースに)
+        cleanCode = cleanCode.replace(
+          /class\s+([^ ]+),\s*([a-zA-Z0-9_-]+)\s*$/gm,
+          "class $1 $2",
+        );
+
+        // 日本語の枕詞などが混入していた場合、最初の有効なキーワード以降のみ抽出
+        const startMatch = cleanCode.match(
+          /(graph|sequenceDiagram|classDiagram|erDiagram|stateDiagram|gantt|pie|gitGraph|journey|mindmap|timeline)[\s\S]*/,
+        );
+        if (startMatch) cleanCode = startMatch[0];
+        // ------------------------------------
+
         const id = `mermaid-render-${Math.random().toString(36).substring(2, 9)}`;
-        // mermaid.render は構文が不正だと例外を投げるため、ここでキャッチされる
         const { svg } = await mermaid.render(id, cleanCode);
 
         if (ref.current) {
@@ -51,7 +67,6 @@ const Mermaid: React.FC<MermaidProps> = ({ chart }) => {
         setRenderError(true);
       }
     };
-
     renderChart();
   }, [chart]);
 
