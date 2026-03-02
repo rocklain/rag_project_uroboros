@@ -20,6 +20,13 @@ class Settings(BaseSettings):
     azure_search_index_name: str
     azure_openai_embedding_deployment: str
     azure_openai_chat_deployment: str
+    
+    # Cosmos DB Settings
+    azure_cosmos_endpoint: str
+    azure_cosmos_key: str
+    azure_cosmos_database_name: str = "OuroborosDB"
+    azure_cosmos_container_name: str = "History"
+
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import axios from "axios";
 import Mermaid from "./components/Mermaid";
 import {
@@ -8,14 +8,23 @@ import {
   Terminal,
   Sparkles,
   AlertTriangle,
+  History,
+  Trash2,
 } from "lucide-react";
 import { Lock } from "lucide-react";
 
 // 型定義の整理
 interface SearchResult {
+  id?: string;
+  query: string;
   summary: string;
   mermaid: string;
   annotation: string;
+}
+
+interface HistoryItem extends SearchResult {
+  id: string;
+  timestamp: string;
 }
 
 // 環境変数の取得（存在しない場合のガード）
@@ -24,11 +33,33 @@ const API_URL = import.meta.env.VITE_API_URL || "";
 function App() {
   const [query, setQuery] = useState("");
   const [result, setResult] = useState<SearchResult | null>(null);
+  const [history, setHistory] = useState<HistoryItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const [inputPassword, setInputPassword] = useState("");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  // --- API通信 ---
+  const apiClient = axios.create({
+    baseURL: API_URL.replace(/\/$/, ""),
+    headers: {
+      "Content-Type": "application/json",
+      "X-Ouroboros-Key": inputPassword,
+    },
+  });
+
+  // 履歴の取得
+  const fetchHistory = async () => {
+    if (!isAuthenticated) return;
+    try {
+      const response = await apiClient.get<HistoryItem[]>("/history");
+      setHistory(response.data);
+    } catch (err) {
+      console.error("History fetch error:", err);
+      setError("履歴の取得に失敗しました。");
+    }
+  };
 
   // ログイン処理
   const handleLogin = (e: React.FormEvent) => {
@@ -41,21 +72,23 @@ function App() {
     }
   };
 
+  // 認証状態が変わったら履歴を取得
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchHistory();
+    }
+  }, [isAuthenticated]);
+
   const handleIndexSearch = async () => {
     if (!query || !API_URL) return;
     setLoading(true);
     setError(null);
     try {
-      const response = await axios.post(
-        `${API_URL.replace(/\/$/, "")}/generate-from-index`,
-        { query, genre: "RAG" },
-        {
-          headers: {
-            "Content-Type": "application/json",
-            "X-Ouroboros-Key": inputPassword,
-          },
-        },
-      );
+      const response = await apiClient.post(`/generate-from-index`, {
+        query,
+        genre: "RAG",
+      });
+
       // handleIndexSearch 内
       const fullText = response.data.mermaid;
 
@@ -69,6 +102,9 @@ function App() {
         mermaid: rawChartArea || "",
         annotation: rawNote ? `注釈: ${rawNote.trim()}` : "",
       });
+
+      // 成功したら履歴を再取得
+      fetchHistory();
     } catch (err: unknown) {
       console.error("Search Error:", err);
       let message = "サーバーとの通信に失敗しました。";
@@ -84,6 +120,31 @@ function App() {
       setError(message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // 履歴アイテムを選択
+  const handleSelectHistory = (item: HistoryItem) => {
+    setQuery(item.query);
+    const [rawChartArea, rawNote] = item.mermaid.split(
+      /注釈[:：]|\*\*注釈[:：]\*\*/,
+    );
+    setResult({
+      ...item,
+      mermaid: rawChartArea || "",
+      annotation: rawNote ? `注釈: ${rawNote.trim()}` : "",
+    });
+  };
+
+  // 履歴アイテムを削除
+  const handleDeleteHistory = async (itemId: string) => {
+    try {
+      await apiClient.delete(`/history/${itemId}`);
+      // UIから削除
+      setHistory(history.filter((item) => item.id !== itemId));
+    } catch (err) {
+      console.error("Delete error:", err);
+      setError("履歴の削除に失敗しました。");
     }
   };
 
@@ -175,6 +236,41 @@ function App() {
                 <div className="mt-4 p-3 bg-red-950/20 border border-red-500/50 rounded-lg text-red-400 text-xs flex items-center gap-2">
                   <AlertTriangle size={14} /> {error}
                 </div>
+              )}
+            </div>
+          </section>
+
+          {/* New: 履歴セクション */}
+          <section className="bg-cyber-dark border border-cyan-900/30 rounded-2xl p-6 shadow-neon">
+            <h2 className="text-xs uppercase tracking-[0.2em] text-neon-cyan mb-4 font-bold flex items-center gap-2">
+              <History size={16} /> Query History
+            </h2>
+            <div className="max-h-60 overflow-y-auto space-y-2 pr-2">
+              {history.length > 0 ? (
+                history.map((item) => (
+                  <div
+                    key={item.id}
+                    className="group bg-cyber-black/50 hover:bg-neon-cyan/10 border border-transparent hover:border-neon-cyan/20 p-3 rounded-lg cursor-pointer transition-all"
+                  >
+                    <div className="flex justify-between items-start">
+                      <p
+                        className="text-xs text-slate-300 group-hover:text-neon-cyan flex-1"
+                        onClick={() => handleSelectHistory(item)}
+                      >
+                        {item.query}
+                      </p>
+                      <button
+                        onClick={() => handleDeleteHistory(item.id)}
+                        className="text-slate-700 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity ml-2"
+                        title="Delete this history item"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <p className="text-xs text-slate-600 italic">No history yet.</p>
               )}
             </div>
           </section>
