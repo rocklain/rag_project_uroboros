@@ -17,7 +17,7 @@ app = FastAPI(title="Ouroboros API")
 # フロントエンドからのリクエスト形式を定義
 class QueryRequest(BaseModel):
     query: str
-    genre: str = None
+    genre: str | None = None
 
 
 raw_origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:5173")
