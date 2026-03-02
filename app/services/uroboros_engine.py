@@ -20,13 +20,12 @@ class Settings(BaseSettings):
     azure_search_index_name: str
     azure_openai_embedding_deployment: str
     azure_openai_chat_deployment: str
-    
+
     # Cosmos DB Settings
     azure_cosmos_endpoint: str
     azure_cosmos_key: str
     azure_cosmos_database_name: str = "OuroborosDB"
     azure_cosmos_container_name: str = "History"
-
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
@@ -92,6 +91,28 @@ class UroborosEngine:
             print(f"CRITICAL ERROR IN _retrieve_context: {e}")
             raise e
 
+    from typing import Any
+
+    def _sanitize_output(self, mermaid: Any) -> str:
+        # mermaid は LLMからAny型で来ることがあるので文字列に変換
+        text = str(mermaid)
+        cleaned = text.replace("**", "").replace("`", "").replace("note1[", "")
+        return cleaned
+
+    def _validate_mermaid(self, mermaid: Any) -> bool:
+        import re
+
+        text = str(mermaid)  # 型エラー防止のため文字列化
+        # サブグラフ名に直接矢印がつながってないか確認
+        subgraphs = re.findall(r"subgraph\s+(\w+)", text)
+        for sg in subgraphs:
+            if re.search(rf"-->(\\s*){sg}", text):
+                return False
+        # check for naive note misuse
+        if re.search(r"note\d+\[", text):
+            return False
+        return True
+
     async def generate_architecture(self, user_query: str):
         """RAGを使用してMermaid図解を生成する"""
         # 1. 関連する論文コンテキストを取得
@@ -112,10 +133,21 @@ class UroborosEngine:
         【出力ルール】
         1. コードブロック内にMermaidコードのみ出力すること。
         2. 出典としてどのファイルの情報に基づいているか、図の末尾に注釈を入れること。
+        3. サブグラフには直接矢印をつないではいけません。必ずサブグラフ内の個別ノードに接続すること。
+        4. 注釈は `note <位置> of <ノード>:` の形式で出力し、Markdown装飾(**など)を含めないこと。
         """)
 
-        # 3. 実行
+        # 3. 実行／検証ループ
         chain = prompt | self.llm
-        response = await chain.ainvoke({"context": context})
+        mermaid_code: str = ""
+        current_context = context
 
-        return response.content
+        for attempt in range(3):
+            response = await chain.ainvoke({"context": current_context})
+            mermaid_code = str(response.content)
+            if self._validate_mermaid(mermaid_code):
+                return self._sanitize_output(mermaid_code)
+            # 構文エラーが見つかった場合は注意文を追加してリトライ
+            current_context += "\n\n# 前回の出力に構文エラーがありました。Mermaid構文に従い正しく修正してください。"
+        # リトライ後もダメならクリーンアップして返す
+        return self._sanitize_output(mermaid_code)
