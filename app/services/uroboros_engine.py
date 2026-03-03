@@ -118,6 +118,10 @@ class UroborosEngine:
             if re.search(rf"note\s+(?:left|right|top|bottom)\s+of\s+{sg}\b", text):
                 return False
 
+        # 対象ノードを指定しない note (例: note bottom:) を検出
+        if re.search(r"note\s+(?:left|right|top|bottom)\s*:", text):
+            return False
+
         return True
 
     async def generate_architecture(self, user_query: str):
@@ -141,7 +145,8 @@ class UroborosEngine:
         1. コードブロック内にMermaidコードのみ出力すること。
         2. 出典としてどのファイルの情報に基づいているか、図の末尾に注釈を入れること。
         3. サブグラフには直接矢印をつないではいけません。必ずサブグラフ内の個別ノードに接続すること。
-        4. 注釈は `note <位置> of <ノード>:` の形式で出力すること。ただし、サブグラフ名に対して `note ... of` を使うことは禁止です。
+        # TODO いずれはシーケンス図には対応するため下記のフローチャート図返却強制は修正予定
+        4. 注釈は `note <位置> of <ノード>:` の形式で出力すること。ただし、サブグラフ名に対して `note ... of` を使うことは禁止です。また、対象ノードを指定しない `note bottom:` などの構文も禁止です。必ず個別のノードに対して注釈を付けてください。
         5. Markdown装飾(**など)を含めないこと。
         """)
 
