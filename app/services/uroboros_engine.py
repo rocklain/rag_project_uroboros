@@ -111,6 +111,13 @@ class UroborosEngine:
         # check for naive note misuse
         if re.search(r"note\d+\[", text):
             return False
+
+        # サブグラフ名に対して note が使われていないか確認
+        for sg in subgraphs:
+            # note (left|right|top|bottom) of <subgraph_name> を検出
+            if re.search(rf"note\s+(?:left|right|top|bottom)\s+of\s+{sg}\b", text):
+                return False
+
         return True
 
     async def generate_architecture(self, user_query: str):
@@ -134,7 +141,8 @@ class UroborosEngine:
         1. コードブロック内にMermaidコードのみ出力すること。
         2. 出典としてどのファイルの情報に基づいているか、図の末尾に注釈を入れること。
         3. サブグラフには直接矢印をつないではいけません。必ずサブグラフ内の個別ノードに接続すること。
-        4. 注釈は `note <位置> of <ノード>:` の形式で出力し、Markdown装飾(**など)を含めないこと。
+        4. 注釈は `note <位置> of <ノード>:` の形式で出力すること。ただし、サブグラフ名に対して `note ... of` を使うことは禁止です。
+        5. Markdown装飾(**など)を含めないこと。
         """)
 
         # 3. 実行／検証ループ
