@@ -97,7 +97,70 @@ class UroborosEngine:
         # mermaid は LLMからAny型で来ることがあるので文字列に変換
         text = str(mermaid)
         cleaned = text.replace("**", "").replace("`", "").replace("note1[", "")
+        # 自動補正を試みる
+        try:
+            cleaned = self._auto_correct_mermaid(cleaned)
+        except Exception:
+            # 補正に失敗しても最低限のクリーンアップは返す
+            pass
         return cleaned
+
+    def _auto_correct_mermaid(self, mermaid_text: str) -> str:
+        """
+        Mermaid出力に対する自動補正パス。
+        - サブグラフ内の最初のノードを代表ノードとして記録し、サブグラフ名を矢印の端点に使っている場合は代表ノードに置換する
+        - `note<number>[` のような誤ったトークンを修正
+        - `note <pos> of <subgraph>` のような誤りは対象ノードに書き換え、対象が不明ならコメントアウトする
+        - 対象なしの `note <pos>:` はコメントアウトしてレンダリングエラーを回避する
+        """
+        import re
+
+        text = mermaid_text
+
+        # 1) サブグラフ -> 代表ノードマップを作成
+        sg_map = {}
+        # マッチ: subgraph <id> [optional title]\n ... \nend
+        for m in re.finditer(r"subgraph\s+([A-Za-z0-9_]+)(?:[^\n]*)\n([\s\S]*?)\nend", text):
+            sg_name = m.group(1)
+            block = m.group(2)
+            # ブロック内の最初のノードIDを探す
+            node_match = re.search(r"^\s*([A-Za-z0-9_]+)\s*(?:\[|\(|:::)", block, re.MULTILINE)
+            if node_match:
+                sg_map[sg_name] = node_match.group(1)
+
+        # 2) note### -> note の簡易修正
+        text = re.sub(r"\bnote\d+\b", "note", text)
+
+        # 3) note <pos> of <subgraph> を代表ノードに書き換える
+        def _replace_note_of(m):
+            prefix = m.group(1)
+            target = m.group(2)
+            if target in sg_map:
+                return f"{prefix}{sg_map[target]}"
+            # 代表ノードが見つからなければコメントアウトして情報を残す
+            return f"%% REMOVED_INVALID_NOTE_OF_{target}: {m.group(0)}"
+
+        text = re.sub(r"(note\s+(?:left|right|top|bottom)\s+of\s+)([A-Za-z0-9_]+)\b", _replace_note_of, text)
+
+        # 4) 対象ノード無しの note (例: note right:) はコメントアウト
+        text = re.sub(r"(note\s+(?:left|right|top|bottom)\s*:)", lambda m: f"%% REMOVED_INVALID_NOTE_NO_TARGET: {m.group(1)}", text)
+
+        # 5) 矢印の端点がサブグラフ名になっているパターンを置換
+        # 簡易的な矢印パターンを扱う
+        def _replace_arrow(m):
+            left = m.group(1)
+            arrow = m.group(2)
+            right = m.group(3)
+            new_left = sg_map.get(left, left)
+            new_right = sg_map.get(right, right)
+            return f"{new_left} {arrow} {new_right}"
+
+        text = re.sub(r"\b([A-Za-z0-9_]+)\b\s*([-]+>|<[-]+|<-+|-->|<-|<->)\s*\b([A-Za-z0-9_]+)\b", _replace_arrow, text)
+
+        # 6) その他: `note1[` のような余分なトークンを取り除く
+        text = text.replace("note1[", "note [")
+
+        return text
 
     def _validate_mermaid(self, mermaid: Any) -> bool:
         import re
