@@ -3,7 +3,20 @@ import os
 from azure.cosmos.aio import CosmosClient
 from azure.cosmos import PartitionKey, exceptions
 from .uroboros_engine import settings
+from pydantic_settings import BaseSettings, SettingsConfigDict
+import dotenv
 
+dotenv.load_dotenv()
+
+class Settings(BaseSettings):
+    azure_cosmos_endpoint: str
+    azure_cosmos_key: str
+    azure_cosmos_database_name: str = "OuroborosDB"
+    azure_cosmos_container_name: str = "History"
+    
+    model_config = SettingsConfigDict(env_file=["../.env", ".env"], extra="ignore")
+
+settings = Settings()  # type: ignore
 
 class CosmosDBManager:
     def __init__(self):
