@@ -41,21 +41,17 @@ function App() {
   const [inputPassword, setInputPassword] = useState("");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  // --- API通信 ---
-  const apiClient = axios.create({
-    baseURL: API_URL.replace(/\/$/, ""),
-    headers: {
-      "Content-Type": "application/json",
-      "X-Ouroboros-User": inputUserId,
-      "X-Ouroboros-Key": inputPassword,
-    },
-  });
-
   // 履歴の取得
   const fetchHistory = async () => {
     if (!isAuthenticated) return;
     try {
-      const response = await apiClient.get<HistoryItem[]>("/history");
+      const response = await axios.get<HistoryItem[]>(`${API_URL.replace(/\/$/, "")}/history`, {
+        headers: {
+          "Content-Type": "application/json",
+          "X-Ouroboros-User": inputUserId,
+          "X-Ouroboros-Key": inputPassword,
+        }
+      });
       setHistory(response.data);
     } catch (err) {
       console.error("History fetch error:", err);
@@ -87,9 +83,15 @@ function App() {
     setLoading(true);
     setError(null);
     try {
-      const response = await apiClient.post(`/generate-from-index`, {
+      const response = await axios.post(`${API_URL.replace(/\/$/, "")}/generate-from-index`, {
         query,
         genre: "RAG",
+      }, {
+        headers: {
+          "Content-Type": "application/json",
+          "X-Ouroboros-User": inputUserId,
+          "X-Ouroboros-Key": inputPassword,
+        }
       });
 
       // handleIndexSearch 内
@@ -142,7 +144,13 @@ function App() {
   // 履歴アイテムを削除
   const handleDeleteHistory = async (itemId: string) => {
     try {
-      await apiClient.delete(`/history/${itemId}`);
+      await axios.delete(`${API_URL.replace(/\/$/, "")}/history/${itemId}`, {
+        headers: {
+          "Content-Type": "application/json",
+          "X-Ouroboros-User": inputUserId,
+          "X-Ouroboros-Key": inputPassword,
+        }
+      });
       // UIから削除
       setHistory(history.filter((item) => item.id !== itemId));
     } catch (err) {
@@ -206,12 +214,12 @@ function App() {
             OUROBOROS <span className="text-neon-cyan">v1.0</span>
           </span>
         </div>
-        <div className="hidden md:flex items-center gap-6 text-xs tracking-widest text-cyan-500/50 uppercase">
+        <div className="hidden md:flex items-center gap-6 text-sm tracking-widest text-cyan-500/70 uppercase">
           <span className="flex items-center gap-1 font-bold text-neon-cyan">
-            <Sparkles size={14} /> モード: RAG 有効
+            <Sparkles size={16} /> モード: RAG 有効
           </span>
           <span className="flex items-center gap-1">
-            <Terminal size={14} /> システム: オンライン
+            <Terminal size={16} /> システム: オンライン
           </span>
         </div>
       </nav>
@@ -220,8 +228,8 @@ function App() {
         {/* 左：コントロールパネル */}
         <div className="lg:col-span-4 space-y-6">
           <section className="bg-cyber-dark border border-cyan-900/30 rounded-2xl p-6 shadow-neon relative">
-            <h2 className="text-xs uppercase tracking-[0.2em] text-neon-cyan mb-6 font-bold flex items-center gap-2">
-              <Search size={16} /> リサーチクエリ (検索)
+            <h2 className="text-sm uppercase tracking-[0.2em] text-neon-cyan mb-6 font-bold flex items-center gap-2">
+              <Search size={18} /> リサーチクエリ (検索)
             </h2>
 
             <div className="space-y-4">
@@ -229,13 +237,13 @@ function App() {
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="例: Graph RAG論文の全体的なアーキテクチャを図解して"
-                className="w-full h-32 bg-cyber-black border border-slate-800 rounded-xl p-4 text-sm focus:border-neon-cyan/50 focus:outline-none transition-all resize-none text-white"
+                className="w-full h-32 bg-cyber-black border border-slate-800 rounded-xl p-4 text-base focus:border-neon-cyan/50 focus:outline-none transition-all resize-none text-white"
               />
 
               <button
                 onClick={handleIndexSearch}
                 disabled={loading || !query}
-                className="w-full py-4 bg-neon-cyan text-cyber-black font-black uppercase tracking-widest rounded-xl hover:bg-white transition-all disabled:bg-slate-800 disabled:text-slate-600 shadow-neon"
+                className="w-full py-4 bg-neon-cyan text-cyber-black font-black text-lg uppercase tracking-widest rounded-xl hover:bg-white transition-all disabled:bg-slate-800 disabled:text-slate-600 shadow-neon"
               >
                 {loading ? (
                   <Loader2 className="animate-spin mx-auto" size={24} />
@@ -246,8 +254,8 @@ function App() {
 
               {/* エラーメッセージ表示エリア */}
               {error && (
-                <div className="mt-4 p-3 bg-red-950/20 border border-red-500/50 rounded-lg text-red-400 text-xs flex items-center gap-2">
-                  <AlertTriangle size={14} /> {error}
+                <div className="mt-4 p-3 bg-red-950/20 border border-red-500/50 rounded-lg text-red-400 text-sm flex items-center gap-2">
+                  <AlertTriangle size={16} /> {error}
                 </div>
               )}
             </div>
@@ -255,8 +263,8 @@ function App() {
 
           {/* New: 履歴セクション */}
           <section className="bg-cyber-dark border border-cyan-900/30 rounded-2xl p-6 shadow-neon">
-            <h2 className="text-xs uppercase tracking-[0.2em] text-neon-cyan mb-4 font-bold flex items-center gap-2">
-              <History size={16} /> クエリ履歴
+            <h2 className="text-sm uppercase tracking-[0.2em] text-neon-cyan mb-4 font-bold flex items-center gap-2">
+              <History size={18} /> クエリ履歴
             </h2>
             <div className="max-h-60 overflow-y-auto space-y-2 pr-2">
               {history.length > 0 ? (
@@ -267,7 +275,7 @@ function App() {
                   >
                     <div className="flex justify-between items-start">
                       <p
-                        className="text-xs text-slate-300 group-hover:text-neon-cyan flex-1"
+                        className="text-sm text-slate-300 group-hover:text-neon-cyan flex-1"
                         onClick={() => handleSelectHistory(item)}
                       >
                         {item.query}
@@ -277,21 +285,20 @@ function App() {
                         className="text-slate-700 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity ml-2"
                         title="この履歴を削除"
                       >
-                        <Trash2 size={14} />
+                        <Trash2 size={16} />
                       </button>
                     </div>
                   </div>
                 ))
               ) : (
-                <p className="text-xs text-slate-600 italic">履歴はありません。</p>
+                <p className="text-sm text-slate-600 italic">履歴はありません。</p>
               )}
             </div>
           </section>
 
           {/* ログエリア */}
-          <section className="bg-cyber-dark border border-slate-800 rounded-2xl p-4 text-[10px] font-mono text-cyan-500/40 space-y-1">
+          <section className="bg-cyber-dark border border-slate-800 rounded-2xl p-4 text-xs font-mono text-cyan-400 space-y-2">
             <p>&gt; インデックス 'ouroboros_index' 接続完了</p>
-            <p>&gt; 検索可能なチャンク数: 90</p>
             <p>&gt; ベクトル空間準備完了</p>
             <p>&gt; 認証トークン: {inputPassword ? "準備完了" : "待機中"}</p>
           </section>
@@ -300,13 +307,13 @@ function App() {
         {/* 右：出力エリア */}
         <div className="lg:col-span-8 bg-cyber-dark border border-cyan-900/20 rounded-2xl p-8 flex flex-col min-h-[600px] overflow-hidden relative">
           <div className="flex items-center justify-between mb-8 border-b border-slate-800 pb-4">
-            <h2 className="text-xs uppercase tracking-[0.2em] text-neon-cyan font-bold">
+            <h2 className="text-sm uppercase tracking-[0.2em] text-neon-cyan font-bold">
               アーキテクチャ図解
             </h2>
             {result && (
               <button
                 onClick={() => setResult(null)}
-                className="text-[10px] text-slate-500 hover:text-neon-cyan transition-colors"
+                className="text-xs text-slate-500 hover:text-neon-cyan transition-colors"
               >
                 出力をクリア
               </button>
@@ -316,7 +323,7 @@ function App() {
           <div className="flex-1 relative overflow-auto">
             {result ? (
               <div className="space-y-6 animate-in fade-in duration-500">
-                <div className="bg-cyber-black p-4 rounded-lg border-l-4 border-neon-cyan text-sm italic text-slate-400">
+                <div className="bg-cyber-black p-4 rounded-lg border-l-4 border-neon-cyan text-base italic text-slate-300">
                   {result.summary}
                 </div>
 
@@ -325,8 +332,8 @@ function App() {
 
                 {/* --- 出典注釈を表示 --- */}
                 {result.annotation && (
-                  <div className="mt-8 pt-4 border-t border-slate-800 text-[10px] text-slate-500 flex items-center gap-2 italic">
-                    <Terminal size={12} className="text-cyan-900" />
+                  <div className="mt-8 pt-4 border-t border-slate-800 text-sm text-slate-400 flex items-center gap-2 italic">
+                    <Terminal size={14} className="text-cyan-600" />
                     {result.annotation}
                   </div>
                 )}
@@ -334,7 +341,7 @@ function App() {
             ) : (
               <div className="absolute inset-0 flex flex-col items-center justify-center opacity-20">
                 <Cpu size={80} className="mb-4 animate-pulse" />
-                <p className="tracking-[0.5em] uppercase text-xs">
+                <p className="tracking-[0.5em] uppercase text-sm">
                   RAG 検索待機中
                 </p>
               </div>
