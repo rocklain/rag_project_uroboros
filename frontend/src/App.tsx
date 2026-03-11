@@ -161,26 +161,29 @@ function App() {
               <Lock className="text-cyber-black" size={32} />
             </div>
             <h1 className="text-white text-2xl font-black tracking-tighter">
-              OUROBOROS AUTH
+              OUROBOROS 認証
             </h1>
+            <p className="text-xs text-cyan-500/50 mt-2 text-center">
+              ポートフォリオ閲覧用のゲストIDとパスワードを入力してください
+            </p>
           </div>
           <form onSubmit={handleLogin} className="space-y-4">
             <input
               type="text"
               value={inputUserId}
               onChange={(e) => setInputUserId(e.target.value)}
-              placeholder="ENTER USER ID..."
+              placeholder="ユーザーID"
               className="w-full bg-cyber-black border border-slate-800 rounded-xl p-4 text-center text-neon-cyan focus:border-neon-cyan/50 focus:outline-none transition-all"
             />
             <input
               type="password"
               value={inputPassword}
               onChange={(e) => setInputPassword(e.target.value)}
-              placeholder="ENTER SYSTEM KEY..."
+              placeholder="システムキー (Password)"
               className="w-full bg-cyber-black border border-slate-800 rounded-xl p-4 text-center text-neon-cyan focus:border-neon-cyan/50 focus:outline-none transition-all"
             />
             <button className="w-full py-4 bg-neon-cyan text-cyber-black font-black uppercase tracking-widest rounded-xl hover:bg-white transition-all shadow-neon">
-              UNLOCK SYSTEM
+              システムをロック解除
             </button>
             {error && (
               <p className="text-red-400 text-xs text-center mt-2">{error}</p>
@@ -205,10 +208,10 @@ function App() {
         </div>
         <div className="hidden md:flex items-center gap-6 text-xs tracking-widest text-cyan-500/50 uppercase">
           <span className="flex items-center gap-1 font-bold text-neon-cyan">
-            <Sparkles size={14} /> Mode: RAG Enabled
+            <Sparkles size={14} /> モード: RAG 有効
           </span>
           <span className="flex items-center gap-1">
-            <Terminal size={14} /> System: Online
+            <Terminal size={14} /> システム: オンライン
           </span>
         </div>
       </nav>
@@ -218,7 +221,7 @@ function App() {
         <div className="lg:col-span-4 space-y-6">
           <section className="bg-cyber-dark border border-cyan-900/30 rounded-2xl p-6 shadow-neon relative">
             <h2 className="text-xs uppercase tracking-[0.2em] text-neon-cyan mb-6 font-bold flex items-center gap-2">
-              <Search size={16} /> Research Query
+              <Search size={16} /> リサーチクエリ (検索)
             </h2>
 
             <div className="space-y-4">
@@ -237,7 +240,7 @@ function App() {
                 {loading ? (
                   <Loader2 className="animate-spin mx-auto" size={24} />
                 ) : (
-                  "Ask Uroboros"
+                  "Uroboros に質問する"
                 )}
               </button>
 
@@ -253,7 +256,7 @@ function App() {
           {/* New: 履歴セクション */}
           <section className="bg-cyber-dark border border-cyan-900/30 rounded-2xl p-6 shadow-neon">
             <h2 className="text-xs uppercase tracking-[0.2em] text-neon-cyan mb-4 font-bold flex items-center gap-2">
-              <History size={16} /> Query History
+              <History size={16} /> クエリ履歴
             </h2>
             <div className="max-h-60 overflow-y-auto space-y-2 pr-2">
               {history.length > 0 ? (
@@ -272,7 +275,7 @@ function App() {
                       <button
                         onClick={() => handleDeleteHistory(item.id)}
                         className="text-slate-700 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity ml-2"
-                        title="Delete this history item"
+                        title="この履歴を削除"
                       >
                         <Trash2 size={14} />
                       </button>
@@ -280,17 +283,17 @@ function App() {
                   </div>
                 ))
               ) : (
-                <p className="text-xs text-slate-600 italic">No history yet.</p>
+                <p className="text-xs text-slate-600 italic">履歴はありません。</p>
               )}
             </div>
           </section>
 
           {/* ログエリア */}
           <section className="bg-cyber-dark border border-slate-800 rounded-2xl p-4 text-[10px] font-mono text-cyan-500/40 space-y-1">
-            <p>&gt; Index 'ouroboros_index' connected</p>
-            <p>&gt; 90 chunks available for retrieval</p>
-            <p>&gt; Vector space ready </p>
-            <p>&gt; Auth Token: {inputPassword ? "READY" : "WAITING"}</p>
+            <p>&gt; インデックス 'ouroboros_index' 接続完了</p>
+            <p>&gt; 検索可能なチャンク数: 90</p>
+            <p>&gt; ベクトル空間準備完了</p>
+            <p>&gt; 認証トークン: {inputPassword ? "準備完了" : "待機中"}</p>
           </section>
         </div>
 
@@ -298,14 +301,14 @@ function App() {
         <div className="lg:col-span-8 bg-cyber-dark border border-cyan-900/20 rounded-2xl p-8 flex flex-col min-h-[600px] overflow-hidden relative">
           <div className="flex items-center justify-between mb-8 border-b border-slate-800 pb-4">
             <h2 className="text-xs uppercase tracking-[0.2em] text-neon-cyan font-bold">
-              Blueprint Visualizer
+              アーキテクチャ図解
             </h2>
             {result && (
               <button
                 onClick={() => setResult(null)}
                 className="text-[10px] text-slate-500 hover:text-neon-cyan transition-colors"
               >
-                CLEAR OUTPUT
+                出力をクリア
               </button>
             )}
           </div>
@@ -332,7 +335,7 @@ function App() {
               <div className="absolute inset-0 flex flex-col items-center justify-center opacity-20">
                 <Cpu size={80} className="mb-4 animate-pulse" />
                 <p className="tracking-[0.5em] uppercase text-xs">
-                  Ready for RAG Search
+                  RAG 検索待機中
                 </p>
               </div>
             )}
