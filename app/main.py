@@ -27,18 +27,19 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
     allow_methods=["*"],
-    allow_headers=["Content-Type", "X-Ouroboros-Key", "Authorization"],
+    allow_headers=["Content-Type", "X-Ouroboros-Key", "X-Ouroboros-User", "Authorization"],
     max_age=600,
 )
 
 engine = UroborosEngine()
 
 
-async def verify_password(x_ouroboros_key: str = Header(None)):
+async def verify_credentials(x_ouroboros_user: str = Header(None), x_ouroboros_key: str = Header(None)):
+    expected_user = os.getenv("APP_USER_ID", "guest")
     expected_key = os.getenv("APP_PASSWORD")
-    if x_ouroboros_key != expected_key:
-        raise HTTPException(status_code=401, detail="Unauthorized: Invalid System Key")
-    return x_ouroboros_key
+    if x_ouroboros_user != expected_user or x_ouroboros_key != expected_key:
+        raise HTTPException(status_code=401, detail="Unauthorized: Invalid Credentials")
+    return {"user": x_ouroboros_user}
 
 
 @app.get("/")
@@ -49,7 +50,7 @@ def read_root():
 @app.post("/generate-from-index")
 async def generate_from_index(
     request: QueryRequest,
-    key: str = Depends(verify_password),
+    credentials: dict = Depends(verify_credentials),
 ):
     """
     インデックス済みの論文からクエリに基づいた構成図を生成し、結果をCosmos DBに保存する
@@ -79,7 +80,7 @@ async def generate_from_index(
 
 
 @app.get("/history")
-async def get_history(key: str = Depends(verify_password)):
+async def get_history(credentials: dict = Depends(verify_credentials)):
     """
     Cosmos DBから履歴を取得する
     """
@@ -87,12 +88,12 @@ async def get_history(key: str = Depends(verify_password)):
         items = await cosmos_manager.get_items()
         return items
     except Exception as e:
-        print(f"API ERROR (get_history): {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        print(f"HISTORY FETCH ERROR: {e}")
+        raise HTTPException(status_code=500, detail="Failed to fetch history")
 
 
 @app.delete("/history/{item_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_history_item(item_id: str, key: str = Depends(verify_password)):
+async def delete_history_item(item_id: str, credentials: dict = Depends(verify_credentials)):
     """
     指定されたIDの履歴をCosmos DBから削除する
     """

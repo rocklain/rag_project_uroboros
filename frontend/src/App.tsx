@@ -37,6 +37,7 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const [inputUserId, setInputUserId] = useState("");
   const [inputPassword, setInputPassword] = useState("");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
@@ -45,6 +46,7 @@ function App() {
     baseURL: API_URL.replace(/\/$/, ""),
     headers: {
       "Content-Type": "application/json",
+      "X-Ouroboros-User": inputUserId,
       "X-Ouroboros-Key": inputPassword,
     },
   });
@@ -57,18 +59,19 @@ function App() {
       setHistory(response.data);
     } catch (err) {
       console.error("History fetch error:", err);
-      setError("履歴の取得に失敗しました。");
+      setError("履歴の取得に失敗しました。認証情報が間違っている可能性があります。");
+      setIsAuthenticated(false);
     }
   };
 
   // ログイン処理
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    if (inputPassword.length > 0) {
+    if (inputUserId.length > 0 && inputPassword.length > 0) {
       setIsAuthenticated(true);
       setError(null);
     } else {
-      setError("システムキーを入力してください。");
+      setError("ユーザーIDとシステムキーを入力してください。");
     }
   };
 
@@ -162,6 +165,13 @@ function App() {
             </h1>
           </div>
           <form onSubmit={handleLogin} className="space-y-4">
+            <input
+              type="text"
+              value={inputUserId}
+              onChange={(e) => setInputUserId(e.target.value)}
+              placeholder="ENTER USER ID..."
+              className="w-full bg-cyber-black border border-slate-800 rounded-xl p-4 text-center text-neon-cyan focus:border-neon-cyan/50 focus:outline-none transition-all"
+            />
             <input
               type="password"
               value={inputPassword}
