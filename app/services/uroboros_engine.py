@@ -95,8 +95,25 @@ class UroborosEngine:
     from typing import Any
 
     def _sanitize_output(self, mermaid: Any) -> str:
-        # mermaid は LLMからAny型で来ることがあるので文字列に変換
+        # LLMからAny型で来ることがあるので文字列に変換
         text = str(mermaid)
+        
+        # ```mermaid と ``` で囲まれている場合は、コードブロック内だけを抽出
+        import re
+        code_block_match = re.search(r"```(?:mermaid)?\s*([\s\S]*?)```", text)
+        if code_block_match:
+            # コードブロックの中身と、それ以外の外側（出典など）を分離
+            mermaid_part = code_block_match.group(1).strip()
+            # 外側のテキストを取得
+            outer_text = text.replace(code_block_match.group(0), "").strip()
+            # 出典などのメタ情報があれば、コードブロックの外に改めて付与（フロントの分割処理用）
+            if outer_text:
+                text = f"{mermaid_part}\n\n出典: {outer_text}"
+            else:
+                text = mermaid_part
+        else:
+            text = text.replace("```mermaid", "").replace("```", "").strip()
+
         cleaned = text.replace("**", "").replace("`", "").replace("note1[", "")
         # 自動補正を試みる
         try:
@@ -209,11 +226,11 @@ class UroborosEngine:
         {context}
 
         【出力ルール】
-        1. コードブロック内にMermaidコードのみ出力すること。
-        2. 出典としてどのファイルの情報に基づいているか、図の末尾に注釈を入れること。
+        1. 必ずコードブロック（```mermaid ... ```）を使ってMermaidコードのみを記述すること。
+        2. Mermaidコードブロックの外（後ろ）に、「出典:」というキーワードで始まり、抽出元のファイル名を記述すること。
         3. サブグラフには直接矢印をつないではいけません。必ずサブグラフ内の個別ノードに接続すること。
-        4. 注釈は `note <位置> of <ノード>:` の形式で出力すること。ただし、サブグラフ名に対して `note ... of` を使うことは禁止です。また、対象ノードを指定しない `note bottom:` などの構文も禁止です。必ず個別のノードに対して注釈を付けてください。
-        5. Markdown装飾(**など)を含めないこと。
+        4. 注釈を付ける場合は `note <位置> of <ノード>:` の形式で出力し、サブグラフ名や対象のない note は使用しないでください。
+        5. Mermaidコード内にはMarkdown装飾(**など)を含めないこと。
         6. 【重要】Mermaid図の中のノード名（図形の中に表示されるテキスト）は、必ず日本語に翻訳して分かりやすく記述すること。
         """)
 

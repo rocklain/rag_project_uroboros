@@ -97,15 +97,15 @@ function App() {
       // handleIndexSearch 内
       const fullText = response.data.mermaid;
 
-      // 「注釈」というキーワードで二つに割る
+      // 「注釈」や「出典」などのキーワードで二つに割る
       const [rawChartArea, rawNote] = fullText.split(
-        /注釈[:：]|\*\*注釈[:：]\*\*/,
+        /注釈[:：]|\*\*注釈[:：]\*\*|出典[:：]|\*\*出典[:：]\*\*|参考[:：]/,
       );
 
       setResult({
         ...response.data,
         mermaid: rawChartArea || "",
-        annotation: rawNote ? `注釈: ${rawNote.trim()}` : "",
+        annotation: rawNote ? `${rawNote.trim()}` : "",
       });
 
       // 成功したら履歴を再取得
@@ -132,12 +132,12 @@ function App() {
   const handleSelectHistory = (item: HistoryItem) => {
     setQuery(item.query);
     const [rawChartArea, rawNote] = item.mermaid.split(
-      /注釈[:：]|\*\*注釈[:：]\*\*/,
+      /注釈[:：]|\*\*注釈[:：]\*\*|出典[:：]|\*\*出典[:：]\*\*|参考[:：]/,
     );
     setResult({
       ...item,
       mermaid: rawChartArea || "",
-      annotation: rawNote ? `注釈: ${rawNote.trim()}` : "",
+      annotation: rawNote ? `${rawNote.trim()}` : "",
     });
   };
 
@@ -334,7 +334,7 @@ function App() {
                 {result.annotation && (
                   <div className="mt-8 pt-4 border-t border-slate-800 text-sm text-slate-400 flex items-center gap-2 italic">
                     <Terminal size={14} className="text-cyan-600" />
-                    {result.annotation}
+                    <span className="font-bold text-slate-300">出典・注釈:</span> {result.annotation}
                   </div>
                 )}
               </div>
